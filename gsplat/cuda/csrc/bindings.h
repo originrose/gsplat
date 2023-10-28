@@ -122,6 +122,7 @@ bin_and_sort_gaussians_tensor(
 std::tuple<
     torch::Tensor,
     torch::Tensor,
+    torch::Tensor,
     torch::Tensor
 > rasterize_forward_kernel_tensor(
     const std::tuple<int, int, int> tile_bounds,
@@ -130,6 +131,7 @@ std::tuple<
     const torch::Tensor &gaussian_ids_sorted,
     const torch::Tensor &tile_bins,
     const torch::Tensor &xys,
+    const torch::Tensor &depths,
     const torch::Tensor &conics,
     const torch::Tensor &colors,
     const torch::Tensor &opacities,

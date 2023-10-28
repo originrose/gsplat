@@ -5,6 +5,7 @@
 std::
     tuple<
         torch::Tensor, // output image
+        torch::Tensor, // output depth
         torch::Tensor, // final_Ts
         torch::Tensor, // final_idx
         torch::Tensor, // tile_bins
@@ -29,6 +30,7 @@ std::
 std::
     tuple<
         torch::Tensor, // output image
+        torch::Tensor, // output depth
         torch::Tensor, // final_Ts
         torch::Tensor, // final_idx
         torch::Tensor, // tile_bins

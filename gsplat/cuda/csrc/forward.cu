@@ -334,12 +334,14 @@ __global__ void nd_rasterize_forward_kernel(
     const int32_t *gaussian_ids_sorted,
     const int2 *tile_bins,
     const float2 *xys,
+    const float *depths,
     const float3 *conics,
     const float *colors,
     const float *opacities,
     float *final_Ts,
     int *final_index,
     float *out_img,
+    float *out_depth,
     const float *background
 ) {
     // current naive implementation where tile data loading is redundant
@@ -397,6 +399,9 @@ __global__ void nd_rasterize_forward_kernel(
         for (int c = 0; c < channels; ++c) {
             out_img[channels * pix_id + c] += colors[channels * g + c] * vis;
         }
+
+        // Weight gaussian depth contributions using the same (alpha * transmittance) factor as color
+        out_depth[pix_id] += depths[g] * vis;
         T = next_T;
     }
     final_Ts[pix_id] = T; // transmittance at last gaussian in this pixel
@@ -406,6 +411,11 @@ __global__ void nd_rasterize_forward_kernel(
             : idx; // index of in bin of last gaussian in this pixel
     for (int c = 0; c < channels; ++c) {
         out_img[channels * pix_id + c] += T * background[c];
+    }
+    
+    // Set depth to 0 if transmittance (T) is still 1.0f, meaning no gaussians were rendered so depth is undefined
+    if (T == 1.0f) {
+        out_depth[pix_id] = 0.0f;
     }
 }
 
@@ -418,12 +428,14 @@ void nd_rasterize_forward_impl(
     const int32_t *gaussian_ids_sorted,
     const int2 *tile_bins,
     const float2 *xys,
+    const float *depths,
     const float3 *conics,
     const float *colors,
     const float *opacities,
     float *final_Ts,
     int *final_index,
     float *out_img,
+    float *out_depth,
     const float *background
 ) {
     nd_rasterize_forward_kernel<<<tile_bounds, block>>>(
@@ -433,12 +445,14 @@ void nd_rasterize_forward_impl(
         gaussian_ids_sorted,
         tile_bins,
         xys,
+        depths,
         conics,
         colors,
         opacities,
         final_Ts,
         final_index,
         out_img,
+        out_depth,
         background
     );
 }
@@ -449,12 +463,14 @@ __global__ void rasterize_forward_kernel(
     const int32_t *gaussian_ids_sorted,
     const int2 *tile_bins,
     const float2 *xys,
+    const float *depths,
     const float3 *conics,
     const float3 *colors,
     const float *opacities,
     float *final_Ts,
     int *final_index,
     float3 *out_img,
+    float *out_depth,
     const float3 &background
 ) {
     // each thread draws one pixel, but also timeshares caching gaussians in a
@@ -498,6 +514,8 @@ __global__ void rasterize_forward_kernel(
     // designated pixel
     int tr = block.thread_rank();
     float3 pix_out = {0.f, 0.f, 0.f};
+    float depth_out = {0.f};
+
     for (int b = 0; b < num_batches; ++b) {
         // resync all threads before beginning next batch
         // end early if entire tile is done
@@ -550,6 +568,7 @@ __global__ void rasterize_forward_kernel(
             pix_out.x = pix_out.x + c.x * vis;
             pix_out.y = pix_out.y + c.y * vis;
             pix_out.z = pix_out.z + c.z * vis;
+            depth_out += depths[g] * vis;
             T = next_T;
             cur_idx = batch_start + t;
         }
@@ -565,6 +584,13 @@ __global__ void rasterize_forward_kernel(
         final_color.y = pix_out.y + T * background.y;
         final_color.z = pix_out.z + T * background.z;
         out_img[pix_id] = final_color;
+
+        // Set depth to 0 if transmittance (T) is still 1.0f, meaning no gaussians were rendered so depth is undefined
+        if (T == 1.0f) {
+            depth_out = 0.0f;
+        } else {
+            out_depth[pix_id] = depth_out;
+        }
     }
 }
 
@@ -576,12 +602,14 @@ void rasterize_forward_impl(
     const int32_t *gaussian_ids_sorted,
     const int2 *tile_bins,
     const float2 *xys,
+    const float *depths,
     const float3 *conics,
     const float3 *colors,
     const float *opacities,
     float *final_Ts,
     int *final_index,
     float3 *out_img,
+    float *out_depth,
     const float3 &background
 ) {
     rasterize_forward_kernel<<<tile_bounds, block>>>(
@@ -590,12 +618,14 @@ void rasterize_forward_impl(
         gaussian_ids_sorted,
         tile_bins,
         xys,
+        depths,
         conics,
         colors,
         opacities,
         final_Ts,
         final_index,
         out_img,
+        out_depth,
         background
     );
 }

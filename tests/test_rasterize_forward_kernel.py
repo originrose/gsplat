@@ -1,7 +1,6 @@
 import pytest
 import torch
 
-
 device = torch.device("cuda:0")
 
 
@@ -31,7 +30,7 @@ def test_rasterize_forward_kernel():
     BLOCK_X, BLOCK_Y = 16, 16
     block = BLOCK_X, BLOCK_Y, 1
     img_size = W, H, 1
-    tile_bounds = (W + BLOCK_X - 1) // BLOCK_X, (H + BLOCK_Y - 1) // BLOCK_Y, 1
+    tile_bounds = (W+BLOCK_X-1) // BLOCK_X, (H+BLOCK_Y-1) // BLOCK_Y, 1
 
     (
         _cov3d,
@@ -73,30 +72,41 @@ def test_rasterize_forward_kernel():
         _isect_ids_sorted,
         _gaussian_ids_sorted,
         _tile_bins,
-    ) = _torch_impl.bin_and_sort_gaussians(
-        num_points, _num_intersects, _xys, _depths, _radii, _cum_tiles_hit, tile_bounds
-    )
+    ) = _torch_impl.bin_and_sort_gaussians(num_points, _num_intersects, _xys, _depths, _radii, _cum_tiles_hit,
+                                           tile_bounds)
 
-    (out_img, final_Ts, final_idx,) = RasterizeForwardKernel.apply(
+    (
+        out_img,
+        out_depth,
+        final_Ts,
+        final_idx,
+    ) = RasterizeForwardKernel.apply(
         tile_bounds,
         block,
         img_size,
         _gaussian_ids_sorted,
         _tile_bins,
         _xys,
+        _depths,
         _conics,
         colors,
         opacities,
         background,
     )
 
-    (_out_img, _final_Ts, _final_idx,) = _torch_impl.rasterize_forward_kernel(
+    (
+        _out_img,
+        _out_depth,
+        _final_Ts,
+        _final_idx,
+    ) = _torch_impl.rasterize_forward_kernel(
         tile_bounds,
         block,
         img_size,
         _gaussian_ids_sorted,
         _tile_bins,
         _xys,
+        _depths,
         _conics,
         colors,
         opacities,
@@ -104,6 +114,7 @@ def test_rasterize_forward_kernel():
     )
 
     torch.testing.assert_close(_out_img, out_img)
+    torch.testing.assert_close(_out_depth, out_depth)
     torch.testing.assert_close(_final_Ts, final_Ts)
     torch.testing.assert_close(_final_idx, final_idx)
 

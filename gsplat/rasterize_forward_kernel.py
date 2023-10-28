@@ -29,6 +29,7 @@ class RasterizeForwardKernel(Function):
         A tuple of {Tensor, Tensor, Tensor}:
 
         - **out_img** (Tensor): the rendered output image.
+        - **out_depth** (Tensor): the rendered output depth.
         - **final_Ts** (Tensor): the final transmittance values.
         - **final_idx** (Tensor): the final gaussian IDs.
     """
@@ -42,6 +43,7 @@ class RasterizeForwardKernel(Function):
         gaussian_ids_sorted: Int[Tensor, "num_intersects 1"],
         tile_bins: Int[Tensor, "num_intersects 2"],
         xys: Float[Tensor, "batch 2"],
+        depths: Float[Tensor, "*batch 1"],
         conics: Float[Tensor, "*batch 3"],
         colors: Float[Tensor, "*batch channels"],
         opacities: Float[Tensor, "*batch 1"],
@@ -52,19 +54,24 @@ class RasterizeForwardKernel(Function):
             colors = colors.float() / 255
 
         if background is not None:
-            assert (
-                background.shape[0] == colors.shape[-1]
-            ), f"incorrect shape of background color tensor, expected shape {colors.shape[-1]}"
+            assert (background.shape[0] == colors.shape[-1]
+                   ), f"incorrect shape of background color tensor, expected shape {colors.shape[-1]}"
         else:
             background = torch.ones(3, dtype=torch.float32)
 
-        (out_img, final_Ts, final_idx,) = _C.rasterize_forward_kernel(
+        (
+            out_img,
+            out_depth,
+            final_Ts,
+            final_idx,
+        ) = _C.rasterize_forward_kernel(
             tile_bounds,
             block,
             img_size,
             gaussian_ids_sorted,
             tile_bins,
             xys,
+            depths,
             conics,
             colors,
             opacities,
@@ -72,6 +79,7 @@ class RasterizeForwardKernel(Function):
         )
         return (
             out_img,
+            out_depth,
             final_Ts,
             final_idx,
         )

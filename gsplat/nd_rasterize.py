@@ -29,6 +29,7 @@ class NDRasterizeGaussians(Function):
         A Tensor:
 
         - **out_img** (Tensor): N-dimensional rendered output image.
+        - **out_depth** (Tensor): 1-channel rendered depth image.
     """
 
     @staticmethod
@@ -50,13 +51,13 @@ class NDRasterizeGaussians(Function):
             colors = colors.float() / 255
 
         if background is not None:
-            assert (
-                background.shape[0] == colors.shape[-1]
-            ), f"incorrect shape of background color tensor, expected shape {colors.shape[-1]}"
+            assert (background.shape[0] == colors.shape[-1]
+                   ), f"incorrect shape of background color tensor, expected shape {colors.shape[-1]}"
         else:
             background = torch.ones(3, dtype=torch.float32)
         (
             out_img,
+            out_depth,
             final_Ts,
             final_idx,
             tile_bins,
@@ -94,7 +95,7 @@ class NDRasterizeGaussians(Function):
         return out_img
 
     @staticmethod
-    def backward(ctx, v_out_img):
+    def backward(ctx, v_out_img, v_out_depth):
         img_height = ctx.img_height
         img_width = ctx.img_width
 

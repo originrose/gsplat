@@ -54,12 +54,14 @@ void rasterize_forward_impl(
     const int32_t *gaussian_ids_sorted,
     const int2 *tile_bins,
     const float2 *xys,
+    const float *depths,
     const float3 *conics,
     const float3 *colors,
     const float *opacities,
     float *final_Ts,
     int *final_index,
     float3 *out_img,
+    float *out_depth,
     const float3 &background
 );
 
@@ -72,12 +74,14 @@ void nd_rasterize_forward_impl(
     const int32_t *gaussian_ids_sorted,
     const int2 *tile_bins,
     const float2 *xys,
+    const float *depths,
     const float3 *conics,
     const float *colors,
     const float *opacities,
     float *final_Ts,
     int *final_index,
     float *out_img,
+    float *out_depth,
     const float *background
 );
 
@@ -118,11 +122,13 @@ __global__ void rasterize_forward_kernel(
     const int32_t *gaussian_ids_sorted,
     const int2 *tile_bins,
     const float2 *xys,
+    const float *depths,
     const float3 *conics,
     const float3 *colors,
     const float *opacities,
     float *final_Ts,
     int *final_index,
     float3 *out_img,
+    float *out_depth,
     const float3 &background
 );

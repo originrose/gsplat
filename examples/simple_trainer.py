@@ -79,9 +79,7 @@ class SimpleTrainer:
         self.viewmat.requires_grad = False
 
     def train(self, iterations: int = 1000, lr: float = 0.01, save_imgs: bool = False):
-        optimizer = optim.Adam(
-            [self.rgbs, self.means, self.scales, self.opacities, self.quats], lr
-        )
+        optimizer = optim.Adam([self.rgbs, self.means, self.scales, self.opacities, self.quats], lr)
         mse_loss = torch.nn.MSELoss()
         frames = []
         for iter in range(iterations):
@@ -101,7 +99,7 @@ class SimpleTrainer:
                 self.tile_bounds,
             )
 
-            out_img = RasterizeGaussians.apply(
+            out_img, depth_img = RasterizeGaussians.apply(
                 xys,
                 depths,
                 radii,
@@ -159,8 +157,8 @@ def main(
     else:
         gt_image = torch.ones((height, width, 3)) * 1.0
         # make top left and bottom right red, blue
-        gt_image[: height // 2, : width // 2, :] = torch.tensor([1.0, 0.0, 0.0])
-        gt_image[height // 2 :, width // 2 :, :] = torch.tensor([0.0, 0.0, 1.0])
+        gt_image[:height // 2, :width // 2, :] = torch.tensor([1.0, 0.0, 0.0])
+        gt_image[height // 2:, width // 2:, :] = torch.tensor([0.0, 0.0, 1.0])
 
     trainer = SimpleTrainer(gt_image=gt_image, num_points=num_points)
     trainer.train(

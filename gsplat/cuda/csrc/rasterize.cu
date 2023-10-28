@@ -16,6 +16,7 @@
 std::
     tuple<
         torch::Tensor, // output image
+        torch::Tensor, // output depth
         torch::Tensor, // final_Ts
         torch::Tensor, // final_idx
         torch::Tensor, // tile_bins
@@ -116,6 +117,9 @@ std::
     torch::Tensor out_img = torch::zeros(
         {img_height, img_width, channels}, xys.options().dtype(torch::kFloat32)
     );
+    torch::Tensor out_depth = torch::zeros(
+        {img_height, img_width, 1}, xys.options().dtype(torch::kFloat32)
+    );
     torch::Tensor final_Ts = torch::zeros(
         {img_height, img_width}, xys.options().dtype(torch::kFloat32)
     );
@@ -134,17 +138,20 @@ std::
         gaussian_ids_sorted.contiguous().data_ptr<int32_t>(),
         (int2 *)tile_bins.contiguous().data_ptr<int>(),
         (float2 *)xys.contiguous().data_ptr<float>(),
+        depths.contiguous().data_ptr<float>(),
         (float3 *)conics.contiguous().data_ptr<float>(),
         colors.contiguous().data_ptr<float>(),
         opacity.contiguous().data_ptr<float>(),
         final_Ts.contiguous().data_ptr<float>(),
         final_idx.contiguous().data_ptr<int>(),
         out_img.contiguous().data_ptr<float>(),
+        out_depth.contiguous().data_ptr<float>(),
         background.contiguous().data_ptr<float>()
     );
 
     return std::make_tuple(
         out_img,
+        out_depth,
         final_Ts,
         final_idx,
         tile_bins,
@@ -158,6 +165,7 @@ std::
 std::
     tuple<
         torch::Tensor, // output image
+        torch::Tensor, // output depth
         torch::Tensor, // final_Ts
         torch::Tensor, // final_idx
         torch::Tensor, // tile_bins
@@ -258,6 +266,9 @@ std::
     torch::Tensor out_img = torch::zeros(
         {img_height, img_width, channels}, xys.options().dtype(torch::kFloat32)
     );
+    torch::Tensor out_depth = torch::zeros(
+        {img_height, img_width, 1}, xys.options().dtype(torch::kFloat32)
+    );
     torch::Tensor final_Ts = torch::zeros(
         {img_height, img_width}, xys.options().dtype(torch::kFloat32)
     );
@@ -275,17 +286,20 @@ std::
         gaussian_ids_sorted.contiguous().data_ptr<int32_t>(),
         (int2 *)tile_bins.contiguous().data_ptr<int>(),
         (float2 *)xys.contiguous().data_ptr<float>(),
+        depths.contiguous().data_ptr<float>(),
         (float3 *)conics.contiguous().data_ptr<float>(),
         (float3 *)colors.contiguous().data_ptr<float>(),
         opacity.contiguous().data_ptr<float>(),
         final_Ts.contiguous().data_ptr<float>(),
         final_idx.contiguous().data_ptr<int>(),
         (float3 *)out_img.contiguous().data_ptr<float>(),
+        out_depth.contiguous().data_ptr<float>(),
         *(float3 *)background.contiguous().data_ptr<float>()
     );
 
     return std::make_tuple(
         out_img,
+        out_depth,
         final_Ts,
         final_idx,
         tile_bins,
